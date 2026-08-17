@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me"
     service_api_token: str = "development-service-token"
     frontend_url: str = "http://localhost:8443"
+    google_client_id: str = ""
+    session_cookie_name: str = "cat_cafe_session"
+    session_ttl_seconds: int = 60 * 60 * 24 * 7
+    session_cookie_secure: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

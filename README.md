@@ -13,7 +13,7 @@ uv sync --extra dev
 uv run uvicorn app.main:app --reload --port 8444
 ```
 
-Open `http://localhost:8444/docs`. The starter uses an in-memory service so it runs before PostgreSQL models are wired to repositories; `app/models/` and Alembic establish the production persistence boundary.
+Open `http://localhost:8444/docs`. The starter uses an in-memory service so it runs before PostgreSQL models are wired to repositories; `app/models/` and Alembic establish the production persistence boundary. Accounts, reservations, and sessions are cleared when the backend restarts.
 
 ## Development checks
 
@@ -25,7 +25,9 @@ uv run ruff format --check .
 
 ## API
 
-- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/google`
+- `GET /api/v1/auth/me`
+- `POST /api/v1/auth/logout`
 - `GET /api/v1/teas`
 - `GET /api/v1/availability?date=YYYY-MM-DD`
 - CRUD under `/api/v1/reservations`
