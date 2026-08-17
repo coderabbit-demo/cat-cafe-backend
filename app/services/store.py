@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from secrets import token_urlsafe
+from threading import Lock
 from uuid import UUID, uuid4
 
 from app.schemas.domain import (
@@ -19,11 +20,14 @@ class SessionRecord:
 
 
 class MemoryStore:
+    MAX_SESSIONS = 10_000
+
     def __init__(self) -> None:
         self.users: dict[str, UUID] = {}
         self.user_emails: dict[UUID, str] = {}
         self.google_identities: dict[str, UUID] = {}
         self.sessions: dict[str, SessionRecord] = {}
+        self._session_lock = Lock()
         self.links: dict[tuple[str, str], str] = {}
         self.reservations: dict[UUID, ReservationRead] = {}
         self.teas = [
@@ -51,23 +55,36 @@ class MemoryStore:
 
     def create_session(self, user_id: UUID, ttl_seconds: int) -> str:
         token = token_urlsafe(32)
-        self.sessions[token] = SessionRecord(
-            user_id=user_id,
-            expires_at=datetime.now(UTC) + timedelta(seconds=ttl_seconds),
-        )
+        now = datetime.now(UTC)
+        with self._session_lock:
+            self._evict_expired_sessions(now)
+            while len(self.sessions) >= self.MAX_SESSIONS:
+                self.sessions.pop(next(iter(self.sessions)))
+            self.sessions[token] = SessionRecord(
+                user_id=user_id,
+                expires_at=now + timedelta(seconds=ttl_seconds),
+            )
         return token
 
     def get_session_user(self, token: str) -> UserRead | None:
-        session = self.sessions.get(token)
+        now = datetime.now(UTC)
+        with self._session_lock:
+            self._evict_expired_sessions(now)
+            session = self.sessions.get(token)
         if session is None:
-            return None
-        if session.expires_at <= datetime.now(UTC):
-            self.sessions.pop(token, None)
             return None
         return self.get_user(session.user_id)
 
     def delete_session(self, token: str) -> None:
-        self.sessions.pop(token, None)
+        with self._session_lock:
+            self.sessions.pop(token, None)
+
+    def _evict_expired_sessions(self, now: datetime) -> None:
+        expired_tokens = [
+            token for token, session in self.sessions.items() if session.expires_at <= now
+        ]
+        for token in expired_tokens:
+            self.sessions.pop(token, None)
 
     def slots(self, on_date: date) -> list[str]:
         if on_date.weekday() == 0:

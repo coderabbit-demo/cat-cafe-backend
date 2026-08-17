@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -63,6 +64,35 @@ def test_expired_session_is_rejected(client: TestClient) -> None:
 
     assert client.get("/api/v1/auth/me").status_code == 401
     assert token not in store.sessions
+
+
+def test_creating_session_evicts_abandoned_expired_sessions(client: TestClient) -> None:
+    user = sign_in(client, "google-user")
+    abandoned_token = client.cookies.get("cat_cafe_session")
+    assert abandoned_token
+    store.sessions[abandoned_token] = SessionRecord(
+        user_id=store.sessions[abandoned_token].user_id,
+        expires_at=datetime.now(UTC) - timedelta(seconds=1),
+    )
+
+    store.create_session(user_id=UUID(user["id"]), ttl_seconds=60)
+
+    assert abandoned_token not in store.sessions
+
+
+def test_session_store_has_a_hard_size_limit(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user = sign_in(client, "google-user")
+    first_token = client.cookies.get("cat_cafe_session")
+    assert first_token
+    monkeypatch.setattr(store, "MAX_SESSIONS", 2)
+
+    store.create_session(user_id=UUID(user["id"]), ttl_seconds=60)
+    store.create_session(user_id=UUID(user["id"]), ttl_seconds=60)
+
+    assert len(store.sessions) == 2
+    assert first_token not in store.sessions
 
 
 def test_invalid_google_credential_is_rejected(
