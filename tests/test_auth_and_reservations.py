@@ -4,6 +4,7 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
+from google.auth.exceptions import GoogleAuthError, TransportError
 
 from app.api.routes import auth
 from app.main import app
@@ -104,6 +105,29 @@ def test_invalid_google_credential_is_rejected(
     monkeypatch.setattr(auth, "verify_google_id_token", reject)
     response = client.post("/api/v1/auth/google", json={"credential": "invalid"})
     assert response.status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_status"),
+    [
+        (TransportError("Google is unavailable"), 503),
+        (GoogleAuthError("Google rejected the request"), 401),
+    ],
+)
+def test_google_verification_errors_are_mapped(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    error: GoogleAuthError,
+    expected_status: int,
+) -> None:
+    def reject(_credential: str) -> dict[str, str]:
+        raise error
+
+    monkeypatch.setattr(auth, "verify_google_id_token", reject)
+
+    response = client.post("/api/v1/auth/google", json={"credential": "invalid"})
+
+    assert response.status_code == expected_status
 
 
 def test_reservations_require_authentication() -> None:

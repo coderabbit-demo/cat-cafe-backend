@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from google.auth.exceptions import GoogleAuthError, TransportError
 
 from app.core.config import get_settings
 from app.core.google_auth import verify_google_id_token
@@ -20,7 +21,12 @@ def register(payload: UserCreate) -> UserRead:
 def google_sign_in(payload: GoogleCredential, response: Response) -> UserRead:
     try:
         claims = verify_google_id_token(payload.credential)
-    except (ValueError, TypeError) as exc:
+    except TransportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google token verification is unavailable",
+        ) from exc
+    except (GoogleAuthError, ValueError, TypeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google credential",
