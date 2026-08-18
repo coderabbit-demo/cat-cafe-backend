@@ -45,4 +45,4 @@ PRs are scoped to a single repository, but shipping a feature or fix often requi
 
 ### To do
 
-- [ ] Sign-in and authentication (so that reservations can work)
+- [x] Sign-in and authentication (so that reservations can work)
