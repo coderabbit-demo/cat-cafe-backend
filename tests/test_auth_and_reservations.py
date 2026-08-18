@@ -48,7 +48,9 @@ def test_google_sign_in_sets_session_and_supports_logout(client: TestClient) -> 
     assert client.cookies.get("cat_cafe_session")
     assert "HttpOnly" in response.headers["set-cookie"]
     assert "SameSite=lax" in response.headers["set-cookie"]
-    assert client.get("/api/v1/auth/me").json() == user
+    me = client.get("/api/v1/auth/me")
+    assert me.json() == user
+    assert me.headers["cache-control"] == "no-store"
     assert client.post("/api/v1/auth/logout").status_code == 204
     assert client.get("/api/v1/auth/me").status_code == 401
 
@@ -152,6 +154,8 @@ def test_reservations_are_scoped_to_the_current_user(client: TestClient) -> None
 
     other_client = TestClient(app)
     sign_in(other_client, "second")
-    assert other_client.get("/api/v1/reservations").json() == []
+    listed = other_client.get("/api/v1/reservations")
+    assert listed.json() == []
+    assert listed.headers["cache-control"] == "no-store"
     assert other_client.delete(f"/api/v1/reservations/{reservation['id']}").status_code == 404
     assert client.delete(f"/api/v1/reservations/{reservation['id']}").status_code == 204

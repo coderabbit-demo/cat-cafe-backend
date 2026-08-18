@@ -48,7 +48,11 @@ def google_sign_in(payload: GoogleCredential, response: Response) -> UserRead:
 
 
 @router.get("/me", response_model=UserRead)
-def me(current_user: Annotated[UserRead, Depends(require_current_user)]) -> UserRead:
+def me(
+    response: Response,
+    current_user: Annotated[UserRead, Depends(require_current_user)],
+) -> UserRead:
+    response.headers["Cache-Control"] = "no-store"
     return current_user
 
 

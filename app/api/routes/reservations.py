@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.core.security import require_current_user
 from app.schemas.domain import ReservationCreate, ReservationRead, ReservationUpdate, UserRead
@@ -12,8 +12,10 @@ router = APIRouter(prefix="/reservations", tags=["reservations"])
 
 @router.get("", response_model=list[ReservationRead])
 def list_reservations(
+    response: Response,
     current_user: Annotated[UserRead, Depends(require_current_user)],
 ) -> list[ReservationRead]:
+    response.headers["Cache-Control"] = "no-store"
     return store.list_reservations(current_user.id)
 
 
