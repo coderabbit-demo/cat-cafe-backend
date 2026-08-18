@@ -12,6 +12,10 @@ class UserRead(UserCreate):
     id: UUID
 
 
+class GoogleCredential(BaseModel):
+    credential: str = Field(min_length=1)
+
+
 class TeaRead(BaseModel):
     id: UUID
     name: str
@@ -24,7 +28,6 @@ class AvailabilityRead(BaseModel):
 
 
 class ReservationCreate(BaseModel):
-    user_id: UUID
     reservation_date: date
     start_time: time
     guest_count: int = Field(ge=1, le=6)
@@ -42,6 +45,7 @@ class ReservationUpdate(BaseModel):
 
 class ReservationRead(ReservationCreate):
     id: UUID
+    user_id: UUID
 
 
 class SlackLinkCreate(BaseModel):

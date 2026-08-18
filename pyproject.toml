@@ -12,6 +12,7 @@ dependencies = [
   "asyncpg>=0.29,<1",
   "email-validator>=2.2,<3",
   "fastapi>=0.115,<1",
+  "google-auth[requests]>=2.35,<3",
   "pydantic-settings>=2.5,<3",
   "pyjwt>=2.9,<3",
   "sqlalchemy>=2.0,<3",
