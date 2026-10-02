@@ -47,4 +47,5 @@ PRs are scoped to a single repository, but shipping a feature or fix often requi
 
 - [x] Sign-in and authentication (so that reservations can work)
 - [ ] Make reservations persistent across BE app restarts
-
+- [ ] Add CodeRabbit VS Code Extension
+- [ ] Check extension behavior
